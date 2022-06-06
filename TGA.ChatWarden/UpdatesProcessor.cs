@@ -37,6 +37,7 @@ namespace TGA.ChatWarden
                     else if (command.Execution == Execution.Ban)
                     {
                         await _telegramBotClient.BanChatMemberAsync(command.TargetChat, command.TargetUser, executionEnd, true);
+                        await _telegramBotClient.DeleteMessageAsync(message.Chat.Id, message.ReplyToMessage.MessageId);
                     }
                     else if (command.Execution == Execution.NoMedia)
                     {

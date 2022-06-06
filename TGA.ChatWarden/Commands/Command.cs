@@ -61,6 +61,7 @@ namespace TGA.ChatWarden.Commands
                     case "-b":
                         command.Duration = Duration.Forever;
                         command.Execution = Execution.Ban;
+                        command.DeleteMessages = true;
                         return true;
                     case "-w-p":
                         command.Duration = Duration.Week;
@@ -86,6 +87,7 @@ namespace TGA.ChatWarden.Commands
                         command.Duration = Duration.Forever;
                         command.Execution = Execution.Ban;
                         command.Report = true;
+                        command.DeleteMessages = true;
                         return true;
                 }
             }
