@@ -21,7 +21,7 @@ namespace TGA.CoreLib.DI
         /// <exception cref="ApplicationException"></exception>
         public static IServiceCollection AddBotComponents(this IServiceCollection services)
         {
-            string token = Environment.GetEnvironmentVariable("TOKEN") ??
+            string token = Environment.GetEnvironmentVariable("WARDEN_TOKEN") ??
                 throw new ApplicationException("Bot token dose not exist in env variable!");
             string mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_DB_CNNSTR") ??
                 throw new ApplicationException("MONGO_DB_CNNSTR dose not exist in env variable!");
