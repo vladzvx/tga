@@ -104,7 +104,7 @@ namespace TGA.ChatWarden
 
         private static bool CheckUpdate(Update update)
         {
-            return update != null && update.Type == UpdateType.Message && update.Message != null && (update.Message.Chat.Type == ChatType.Supergroup || update.Message.Chat.Type == ChatType.Group) && !string.IsNullOrEmpty(update.Message.Text ?? update.Message.Caption);
+            return update != null && update.Type == UpdateType.Message && update.Message != null && (update.Message.Chat.Type == ChatType.Supergroup || update.Message.Chat.Type == ChatType.Group) && !(string.IsNullOrEmpty(update.Message.Text ?? update.Message.Caption)) || (update!=null && update.Message != null && update.Message.NewChatMembers!=null && update.Message.NewChatMembers.Length>0);
         }
 
         public async Task Process(Update update)
@@ -114,14 +114,26 @@ namespace TGA.ChatWarden
                 await _genericRepository.LogData(update.Message);
                 var profile = await GetProfile();
                 await ProcessCommands(profile, update.Message);
-                if (update.Message.From.Username == "Channel_Bot")
+                if (update.Message != null && update.Message.From!=null && update.Message.From.Username == "Channel_Bot")
                 {
                     await _telegramBotClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId);
                 }
-                if (profile.Overrun && !CheckPrivilleged(profile, update.Message) && !CheckAdmin(profile, update.Message) && update.Message.From != null)
+                if (profile.Overrun && !CheckPrivilleged(profile, update.Message) && !CheckAdmin(profile, update.Message) && update.Message != null && update.Message.From!=null)
                 {
-                    await _telegramBotClient.BanChatMemberAsync(update.Message.Chat.Id, update.Message.From.Id, DateTime.UtcNow.AddHours(2), true);
-                    await _telegramBotClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId);
+                    if (CheckDeletion(profile,update.Message))
+                    {
+                        await _telegramBotClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId);
+                        return;
+                    }
+
+                    var cm = await _telegramBotClient.GetChatMemberAsync(update.Message.Chat.Id, update.Message.From.Id);
+
+                    if (cm.Status==ChatMemberStatus.Left || (update.Message.NewChatMembers != null && update.Message.NewChatMembers.Length>0))
+                    {
+                        await _telegramBotClient.BanChatMemberAsync(update.Message.Chat.Id, update.Message.From.Id, DateTime.UtcNow.AddHours(2), true);
+                        await _telegramBotClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId);
+                        return;
+                    }
                 }
             }
         }
@@ -134,6 +146,11 @@ namespace TGA.ChatWarden
         private static bool CheckAdmin(BotProfile botProfile, Message? message)
         {
             return message != null && message.From != null && botProfile.Administrators.FindAll(item => item.ChatId == message.Chat.Id && item.UserId == message.From.Id).Count > 0;
+        }
+
+        private static bool CheckDeletion(BotProfile botProfile, Message message)
+        {
+            return false;
         }
 
         private static bool CheckPrivilleged(BotProfile botProfile, Message? message)
